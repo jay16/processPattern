@@ -13,6 +13,8 @@
 // #003 2015/01/04  eric                解决金钱小数问题
 // #004 2015/01/05  eric                解决金钱角毛分问题
 // #005 2015/01/07  eric                睡觉一整天,花了我的一百五买衣服
+// #005 2015/01/08  eric                "买了", "买", "卖了", "卖"
+// #006 2015/01/08  eric                【单位】无法辨认--NO
                                       
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,6 +38,30 @@ int g_nMoney = 0;
 float g_fMoney = 0;//#003
 char g_szType[MAX_INPUT_LEN];
 char g_szRemain[MAX_INPUT_LEN];
+
+//Begin of #005
+char *filter(char *str, char *word){
+    char *p, *q;
+    char *src, *dst;
+    dst=src=str;
+    while (*src != '\0'){
+        p=src;
+        q=word;
+        while (*p==*q && *q != '\0'){
+            p++;
+            q++;
+        }
+        if (*q=='\0'){
+            src=p;
+        }
+        else{
+            *dst++=*src++;
+        }
+    }
+    *dst='\0';
+    return str;
+}
+//End of #005
 
 //Begin of #004
 float getCorner(char *pCh)
@@ -281,7 +307,7 @@ int getMinute(char *pCh)
 int process(char szParam[MAX_INPUT_LEN])
 {
     char *pCh=NULL,*pChStart=NULL, *pCh2=NULL;//#005 增加了*pCh2=NULL
-    char szInput[MAX_INPUT_LEN];
+    char szInput[MAX_INPUT_LEN], szTemp[MAX_INPUT_LEN], szChStart[MAX_INPUT_LEN];
     int nTemp=0,nLastDigit=0,nLastQuant=0,nZeroFlag=0,nLastIsTen=0;
     float fTemp=0,fLastQuant=0;
     int nLen=0,i;
@@ -569,9 +595,10 @@ step_X1:
                 debug_printf("xx个半小时 - [%s]\n",szInput);
                 break;
             }
-            else { //前面是 "花钱","花费", "花", "花了", "用了", "买"(TODO)
+            else { //前面是 "花钱","花费", "花", "花了", "用了", "买", "买了"(TODO)
                 //Begin of #005
                 debug_printf("*** pChStart=[%s],pCh=[%s],\n",pChStart,pCh);
+                debug_printf("after step 4-1, szInput=[%s]\n",szInput);
                 if ((pCh2 = strstr(szInput,"花钱")) != NULL && pCh2 < pChStart) {
                     strcpy(pCh2,pCh); // 清除花了跟之后所有的赘字
                     //strcpy(pCh2,pCh2+6); // 只清除花了
@@ -584,6 +611,28 @@ step_X1:
                     g_nMoney = nTemp;
                     break;
                 }
+                else if ((pCh2 = strstr(szInput,"买了")) != NULL && pCh2 < pChStart) {// Begin of #005
+                    //strcpy(pCh2,pCh); // 清除买了跟之后所有的赘字
+                    //strcpy(pCh2,pCh2+6); // 只清除买了
+                    strcpy(szTemp, pCh2);
+                    strcpy(szChStart, pChStart);
+                    debug_printf("---%s---\n",szTemp); 
+                    strcpy(szInput, filter(szTemp, szChStart));
+                    strcat(szInput, pCh);
+                    g_nMoney = nTemp;
+                    break;
+                }
+                else if ((pCh2 = strstr(szInput,"卖了")) != NULL && pCh2 < pChStart) {
+                    //strcpy(pCh2,pCh); // 清除卖了跟之后所有的赘字
+                    //strcpy(pCh2,pCh2+6); // 只清除买了
+                    strcpy(szTemp, pCh2);
+                    strcpy(szChStart, pChStart);
+                    debug_printf("---%s---\n",szTemp); 
+                    strcpy(szInput, filter(szTemp, szChStart));
+                    strcat(szInput, pCh);
+                    g_nMoney = nTemp;
+                    break;
+                }// End of #005
                 else if ((pCh2 = strstr(szInput,"花了")) != NULL && pCh2 < pChStart) {
                     strcpy(pCh2,pCh); // 清除花了跟之后所有的赘字
                     //strcpy(pCh2,pCh2+6); // 只清除花了
@@ -602,11 +651,37 @@ step_X1:
                     g_nMoney = nTemp;
                     break;
                 }
+                else if ((pCh2 = strstr(szInput,"买")) != NULL && pCh2 < pChStart) {//Begin of #005
+                    //strcpy(pCh2,pCh); // 清除买跟之后所有的赘字
+                    //strcpy(pCh2,pCh2+3); // 只清除买
+                    strcpy(szTemp, pCh2);
+                    strcpy(szChStart, pChStart);
+                    debug_printf("---%s---\n",szTemp); 
+                    strcpy(szInput, filter(szTemp, szChStart));
+                    strcat(szInput, pCh);
+                    g_nMoney = nTemp;
+                    debug_printf("after step 4-2, szInput=[%s]\n",szInput);
+                    break;
+                }
+                else if ((pCh2 = strstr(szInput,"卖")) != NULL && pCh2 < pChStart) {
+                    debug_printf("after step 4-2, pCh2=[%s], pCh=[%s], pChStart =[%s], szInput =[%s]\n", pCh2, pCh, pChStart, szInput);
+                    //strcpy(pCh2,pCh); // 清除卖跟之后所有的赘字
+                    //strcpy(pCh2,pCh2+3); // 只清除卖
+                    strcpy(szTemp, pCh2);
+                    strcpy(szChStart, pChStart);
+                    debug_printf("---%s---\n",szTemp); 
+                    strcpy(szInput, filter(szTemp, szChStart));
+                    strcat(szInput, pCh);
+                    g_nMoney = nTemp;
+                    debug_printf("after step 4-2, pCh2=[%s], pCh=[%s], pChStart =[%s], szInput =[%s]\n", pCh2, pCh, pChStart, szInput);
+                    break;
+                }//End of #005
                 /*
                 if (pChStart-szInput >= 6 && 
                     (strncmp(pChStart-6,"花费",6) == 0 || 
                      strncmp(pChStart-6,"花钱",6) == 0 ||  //#001 
                      strncmp(pChStart-6,"花了",6) == 0 ||
+                     strncmp(pChStart-6,"买了",6) == 0 ||
                      strncmp(pChStart-6,"用了",6) == 0)) {
                     g_nMoney = nTemp;
                     strcpy(pChStart-6,pCh);
@@ -617,6 +692,7 @@ step_X1:
                     (strncmp(pChStart-7,"花费",6) == 0 || 
                      strncmp(pChStart-7,"花钱",6) == 0 || //#001 
                      strncmp(pChStart-7,"花了",6) == 0 ||
+                     strncmp(pChStart-7,"买了",6) == 0 ||
                      strncmp(pChStart-7,"用了",6) == 0)) {
                     g_nMoney = nTemp;
                     strcpy(pChStart-7,pCh-1);
@@ -624,6 +700,12 @@ step_X1:
                     break;
                 }
                 else if (pChStart-szInput >=3 && strncmp(pChStart-3,"花",3) == 0) {
+                    g_nMoney = nTemp;
+                    strcpy(pChStart-3,pCh);
+                    pCh = pChStart-3;
+                    break;
+                }
+                else if (pChStart-szInput >=3 && strncmp(pChStart-3,"买",3) == 0) {
                     g_nMoney = nTemp;
                     strcpy(pChStart-3,pCh);
                     pCh = pChStart-3;
@@ -787,21 +869,30 @@ step_4_4_1: // #001 加入 step_4_4_1, 解决 【一百五十万】的问题
     if (pCh && strncmp(pCh,"的",3) == 0)
         strcpy(pCh,pCh+3);
 
-    // 还是要把 "花费", "花", "花了", "用了" 清掉
+    // 还是要把 "花费", "花", "花了", "用了", "买了" 清掉
     debug_printf("pChStart=[%s],-6=[%s],-5=[%s]\n",pChStart,pChStart-6,pChStart-5);
+    debug_printf("after step 4, szInput=[%s]\n",szInput);
     if (pChStart && pChStart-szInput >= 6 && 
         (strncmp(pChStart-6,"花费",6) == 0 || 
          strncmp(pChStart-6,"花钱",6) == 0 ||
          strncmp(pChStart-6,"花了",6) == 0 ||
+         strncmp(pChStart-6,"买了",6) == 0 ||
+         strncmp(pChStart-6,"卖了",6) == 0 ||
          strncmp(pChStart-6,"用了",6) == 0))
         strcpy(pChStart-6,pChStart);
     else if (pChStart && pChStart-szInput >= 5 && 
         (strncmp(pChStart-5,"花费",6) == 0 || 
          strncmp(pChStart-5,"花钱",6) == 0 ||
          strncmp(pChStart-5,"花了",6) == 0 ||
+         strncmp(pChStart-5,"买了",6) == 0 ||
+         strncmp(pChStart-5,"卖了",6) == 0 ||
          strncmp(pChStart-5,"用了",6) == 0))
         strcpy(pChStart-5,pChStart+1);
     else if (pChStart && pChStart-szInput >=3 && strncmp(pChStart-3,"花",3) == 0)
+        strcpy(pChStart-3,pChStart);
+    else if (pChStart && pChStart-szInput >=3 && strncmp(pChStart-3,"买",3) == 0)
+        strcpy(pChStart-3,pChStart);
+    else if (pChStart && pChStart-szInput >=3 && strncmp(pChStart-3,"卖",3) == 0)
         strcpy(pChStart-3,pChStart);
 
     // 把前面的 "了" 清掉
@@ -850,49 +941,50 @@ int main(int argc, char *argv[])
         {
             debug_printf("*****[%f]*****", g_fMoney);
             if(g_fMoney > 0) //Begin of #003
-                printf("[%s] - Money:[%.2f],Time:[%d]\n\n", szTemp,g_fMoney,g_nTime);
+                printf("{\"主题\":\"%s\",\"分类\":\"%s\",\"金额\":\"%.2f\",\"分钟\":\"%d\"}\n", g_szRemain,g_szType,g_fMoney,g_nTime);
             else // end of #003
-                printf("[%s] - Money:[%d],Time:[%d]\n\n", szTemp,g_nMoney,g_nTime);
+                printf("{\"主题\":\"%s\",\"分类\":\"%s\",\"金额\":\"%d\",\"分钟\":\"%d\"}\n", g_szRemain,g_szType,g_nMoney,g_nTime);
         }
         else
-            printf("[%s] - process failed\n\n",argv[1]);
+            printf("{\"提示\": \"这好像不是金钱与时间.\"}\n");
     }
-
-    if ((fp=fopen(INPUT_FILE,"r")) != NULL) {
-        while(fgets(szTemp,MAX_INPUT_LEN-1,fp) != NULL) {
-            //fgets(szTemp,MAX_INPUT_LEN-1,fp);
-            szTemp[MAX_INPUT_LEN-1] = '\0';
-            // right trim
-            nLen = strlen(szTemp);
-            while (szTemp[nLen-1] == '\r' || szTemp[nLen-1] == '\n') {
-                szTemp[nLen-1] = '\0';
+    else{
+        if ((fp=fopen(INPUT_FILE,"r")) != NULL) {
+            while(fgets(szTemp,MAX_INPUT_LEN-1,fp) != NULL) {
+                //fgets(szTemp,MAX_INPUT_LEN-1,fp);
+                szTemp[MAX_INPUT_LEN-1] = '\0';
+                // right trim
                 nLen = strlen(szTemp);
-            }
-            g_fMoney = 0;
+                while (szTemp[nLen-1] == '\r' || szTemp[nLen-1] == '\n') {
+                    szTemp[nLen-1] = '\0';
+                    nLen = strlen(szTemp);
+                }
+                g_fMoney = 0;
 
-            if (process(szTemp) == SUCCESS)
-            {
-                if(g_fMoney > 0)//#003 start
+                if (process(szTemp) == SUCCESS)
                 {
-                    debug_printf("[%s] - Remain:[%s],Type:[%s],Money:[%.2f],Time:[%d]\n\n", szTemp,g_szRemain,g_szType,g_fMoney,g_nTime);
-                    printf("{\"主题\":\"%s\",\"分类\":\"%s\",\"金额\":\"%.2f\",\"分钟\":\"%d\"}\n", g_szRemain,g_szType,g_fMoney,g_nTime);
-                }
-                else//#003 end
-                {
-                    debug_printf("[%s] - Remain:[%s],Type:[%s],Money:[%d],Time:[%d]\n\n", szTemp,g_szRemain,g_szType,g_nMoney,g_nTime);
-                    printf("{\"主题\":\"%s\",\"分类\":\"%s\",\"金额\":\"%d\",\"分钟\":\"%d\"}\n", g_szRemain,g_szType,g_nMoney,g_nTime);
-                }
-             }
-                //printf("[%s] - Remain:[%s],Type:[%s],Money:[%d],Time:[%d]\n\n", 
-               //        szTemp,g_szRemain,g_szType,g_nMoney,g_nTime);
-            else
-            {
-                printf("{\"提示\": \"这好像不是金钱与时间.\"}\n");
-                debug_printf("[%s] - process failed\n\n", szTemp);
+                    if(g_fMoney > 0)//#003 start
+                    {
+                        printf("[%s] - Remain:[%s],Type:[%s],Money:[%.2f],Time:[%d]\n\n", szTemp,g_szRemain,g_szType,g_fMoney,g_nTime);
+                        //printf("{\"主题\":\"%s\",\"分类\":\"%s\",\"金额\":\"%.2f\",\"分钟\":\"%d\"}\n", g_szRemain,g_szType,g_fMoney,g_nTime);
+                    }
+                    else//#003 end
+                    {
+                        printf("[%s] - Remain:[%s],Type:[%s],Money:[%d],Time:[%d]\n\n", szTemp,g_szRemain,g_szType,g_nMoney,g_nTime);
+                        //printf("{\"主题\":\"%s\",\"分类\":\"%s\",\"金额\":\"%d\",\"分钟\":\"%d\"}\n", g_szRemain,g_szType,g_nMoney,g_nTime);
+                    }
+                 }
+                 //printf("[%s] - Remain:[%s],Type:[%s],Money:[%d],Time:[%d]\n\n", 
+                 //szTemp,g_szRemain,g_szType,g_nMoney,g_nTime);
+                 else
+                 {
+                     //printf("{\"提示\": \"这好像不是金钱与时间.\"}\n");
+                     printf("[%s] - process failed\n\n", szTemp);
+                 }
             }
-        }
-        fclose(fp);
-        fp = NULL;
+            fclose(fp);
+            fp = NULL;
+        }   
     }
 
     return 0;
