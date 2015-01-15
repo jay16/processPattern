@@ -74,3 +74,7 @@
 
 [一百五元花的买衣服] - Remain:[花的买衣服],Type:[购物],Money:[150],Time:[0]
 
+[买车二百五十万kdkwoe] - Remain:[买车kdkwoe],Type:[购物],Money:[2500000],Time:[0]
+
+[买车250万kdkwoe] - Remain:[买车kdkwoe],Type:[购物],Money:[2500000],Time:[0]
+

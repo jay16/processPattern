@@ -15,10 +15,12 @@
 // #005 2015/01/07  eric                睡觉一整天,花了我的一百五买衣服
 // #005 2015/01/08  eric                "买了", "买", "卖了", "卖"
 // #006 2015/01/08  eric                【单位】无法辨认--NO
+// #007 2015/01/14  eric                返回提到的日期，（如：昨天）
                                       
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "dictType.h"
 #include "dictList.h"
 
@@ -38,9 +40,40 @@ int g_nMoney = 0;
 float g_fMoney = 0;//#003
 char g_szType[MAX_INPUT_LEN];
 char g_szRemain[MAX_INPUT_LEN];
+char g_szTime[MAX_INPUT_LEN];//返回提到的日期（如：昨天）解析结果yyyy-mm-dd#007
+
+//Begin of #007
+char *pDate(int nday)
+{
+    time_t t;
+    struct tm *tmLocal;
+    time(&t);
+    int i;
+    for(i=0; i<nday; i++)
+    {
+        t -= 86400;
+    }
+    tmLocal = localtime(&t);
+    /*
+    snprintf(szTime,MAX_INPUT_LEN-1,"%04d-%02d-%02d %02d:%02d:%02d",
+             tmLocal->tm_year+1900,
+             tmLocal->tm_mon+1,
+             tmLocal->tm_mday,
+             tmLocal->tm_hour,
+             tmLocal->tm_min,
+             tmLocal->tm_sec);*/
+    snprintf(g_szTime,MAX_INPUT_LEN-1,"%04d-%02d-%02d",
+             tmLocal->tm_year+1900,
+             tmLocal->tm_mon+1,
+             tmLocal->tm_mday,
+             tmLocal->tm_hour,
+             tmLocal->tm_min,
+             tmLocal->tm_sec);
+}
+//End of #007
 
 //Begin of #005
-char *filter(char *str, char *word){
+char *pFilter(char *str, char *word){
     char *p, *q;
     char *src, *dst;
     dst=src=str;
@@ -324,14 +357,17 @@ int process(char szParam[MAX_INPUT_LEN])
     if ((pCh=strstr(szInput,"昨天")) != NULL) {
         strcpy(pCh,pCh+6);
         g_nDateOffset = 1;
+        pDate(g_nDateOffset); 
     }
     else if ((pCh=strstr(szInput,"前天")) != NULL) {
         strcpy(pCh,pCh+6);
         g_nDateOffset = 2;
+        pDate(g_nDateOffset); 
     }
     else if ((pCh=strstr(szInput,"今天")) != NULL) {
         strcpy(pCh,pCh+6);
         g_nDateOffset = 0;
+        pDate(g_nDateOffset); 
     }
     else
         g_nDateOffset = 0;
@@ -523,9 +559,37 @@ step_X1:
                 }// end of #004
                 break;
             }
+            else if (strncmp(pCh,"万元",6) == 0) { //Begin of #006
+                g_nMoney = nTemp*10000;
+                strcpy(pChStart,pCh+6);
+                pCh = pChStart;
+                float g_cMoney = getCorner(pCh);
+                if (g_cMoney > 0)
+                {
+                    g_fMoney += g_cMoney;
+                }
+                debug_printf("xx万 - [%s]\n",szInput);
+                break;
+            }
+            else if (strncmp(pCh,"万",3) == 0) { //Begin of #006
+                g_nMoney = nTemp*10000;
+                strcpy(pChStart,pCh+3);
+                pCh = pChStart;
+                float g_cMoney = getCorner(pCh);
+                if (g_cMoney > 0)
+                {
+                    g_fMoney += g_cMoney;
+                }
+                debug_printf("xx万 - [%s]\n",szInput);
+                break;
+            }
             else if (strncmp(pCh,"小时",6) == 0) {
                 if (fTemp > 0)
-                    g_nTime = fTemp * 60;
+                {
+                    fTemp *= 60;
+                    g_nTime = fTemp;
+                    //g_nTime = fTemp * 60;
+                }
                 else
                     g_nTime = nTemp * 60;
                 strcpy(pChStart,pCh+6);
@@ -617,7 +681,7 @@ step_X1:
                     strcpy(szTemp, pCh2);
                     strcpy(szChStart, pChStart);
                     debug_printf("---%s---\n",szTemp); 
-                    strcpy(szInput, filter(szTemp, szChStart));
+                    strcpy(szInput, pFilter(szTemp, szChStart));
                     strcat(szInput, pCh);
                     g_nMoney = nTemp;
                     break;
@@ -628,7 +692,7 @@ step_X1:
                     strcpy(szTemp, pCh2);
                     strcpy(szChStart, pChStart);
                     debug_printf("---%s---\n",szTemp); 
-                    strcpy(szInput, filter(szTemp, szChStart));
+                    strcpy(szInput, pFilter(szTemp, szChStart));
                     strcat(szInput, pCh);
                     g_nMoney = nTemp;
                     break;
@@ -657,7 +721,7 @@ step_X1:
                     strcpy(szTemp, pCh2);
                     strcpy(szChStart, pChStart);
                     debug_printf("---%s---\n",szTemp); 
-                    strcpy(szInput, filter(szTemp, szChStart));
+                    strcpy(szInput, pFilter(szTemp, szChStart));
                     strcat(szInput, pCh);
                     g_nMoney = nTemp;
                     debug_printf("after step 4-2, szInput=[%s]\n",szInput);
@@ -670,7 +734,7 @@ step_X1:
                     strcpy(szTemp, pCh2);
                     strcpy(szChStart, pChStart);
                     debug_printf("---%s---\n",szTemp); 
-                    strcpy(szInput, filter(szTemp, szChStart));
+                    strcpy(szInput, pFilter(szTemp, szChStart));
                     strcat(szInput, pCh);
                     g_nMoney = nTemp;
                     debug_printf("after step 4-2, pCh2=[%s], pCh=[%s], pChStart =[%s], szInput =[%s]\n", pCh2, pCh, pChStart, szInput);
@@ -931,6 +995,7 @@ int main(int argc, char *argv[])
 {
     char *pCh=NULL;
     char szTemp[MAX_INPUT_LEN];
+    char szTime[MAX_INPUT_LEN];
     int nLen=0;
     FILE *fp=NULL;
 
@@ -940,10 +1005,10 @@ int main(int argc, char *argv[])
         if (process(szTemp) == SUCCESS)
         {
             debug_printf("*****[%f]*****", g_fMoney);
-            if(g_fMoney > 0) //Begin of #003
-                printf("{\"主题\":\"%s\",\"分类\":\"%s\",\"金额\":\"%.2f\",\"分钟\":\"%d\"}\n", g_szRemain,g_szType,g_fMoney,g_nTime);
-            else // end of #003
-                printf("{\"主题\":\"%s\",\"分类\":\"%s\",\"金额\":\"%d\",\"分钟\":\"%d\"}\n", g_szRemain,g_szType,g_nMoney,g_nTime);
+            if(g_fMoney > 0) //Begin of #003#007
+                printf("{\"主题\":\"%s\",\"分类\":\"%s\",\"金额\":\"%.2f\",\"分钟\":\"%d\",\"日期\":\"%s\"}\n", g_szRemain,g_szType,g_fMoney,g_nTime,g_szTime);
+            else // end of #003#007
+                printf("{\"主题\":\"%s\",\"分类\":\"%s\",\"金额\":\"%d\",\"分钟\":\"%d\",\"日期\":\"%s\"}\n", g_szRemain,g_szType,g_nMoney,g_nTime,g_szTime);
         }
         else
             printf("{\"提示\": \"这好像不是金钱与时间.\"}\n");
@@ -963,16 +1028,16 @@ int main(int argc, char *argv[])
 
                 if (process(szTemp) == SUCCESS)
                 {
-                    if(g_fMoney > 0)//#003 start
+                    if(g_fMoney > 0)//Begin of #003#007
                     {
-                        printf("[%s] - Remain:[%s],Type:[%s],Money:[%.2f],Time:[%d]\n\n", szTemp,g_szRemain,g_szType,g_fMoney,g_nTime);
+                        printf("[%s] - Remain:[%s],Type:[%s],Money:[%.2f],Time:[%d],Date:[%s]\n\n", szTemp,g_szRemain,g_szType,g_fMoney,g_nTime,g_szTime);
                         //printf("{\"主题\":\"%s\",\"分类\":\"%s\",\"金额\":\"%.2f\",\"分钟\":\"%d\"}\n", g_szRemain,g_szType,g_fMoney,g_nTime);
                     }
-                    else//#003 end
+                    else//#003#007 end
                     {
-                        printf("[%s] - Remain:[%s],Type:[%s],Money:[%d],Time:[%d]\n\n", szTemp,g_szRemain,g_szType,g_nMoney,g_nTime);
+                        printf("[%s] - Remain:[%s],Type:[%s],Money:[%d],Time:[%d],Date[%s]\n\n", szTemp,g_szRemain,g_szType,g_nMoney,g_nTime,g_szTime);
                         //printf("{\"主题\":\"%s\",\"分类\":\"%s\",\"金额\":\"%d\",\"分钟\":\"%d\"}\n", g_szRemain,g_szType,g_nMoney,g_nTime);
-                    }
+                    }//End of #003#007
                  }
                  //printf("[%s] - Remain:[%s],Type:[%s],Money:[%d],Time:[%d]\n\n", 
                  //szTemp,g_szRemain,g_szType,g_nMoney,g_nTime);
